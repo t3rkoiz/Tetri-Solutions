@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tetri Solutions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #090909;
+      --surface: #111111;
+      --border: #1f1f1f;
+      --text: #efefef;
+      --text-muted: #666666;
+      --text-dim: #999999;
+      --accent: #c8ff00;
+      --pad: 4rem;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem var(--pad);
+      border-bottom: 1px solid transparent;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    nav.scrolled {
+      background: rgba(9,9,9,0.92);
+      border-color: var(--border);
+      backdrop-filter: blur(12px);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo-mark { flex-shrink: 0; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      color: var(--bg) !important;
+      background: var(--accent);
+      padding: 0.55rem 1.25rem;
+      border-radius: 2px;
+      transition: opacity 0.2s !important;
+    }
+    .nav-cta:hover { opacity: 0.85 !important; }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 var(--pad) 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    #heroCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+    }
+    .hero-heading {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(3rem, 7vw, 7rem);
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      max-width: 14ch;
+      margin-bottom: 2rem;
+    }
+    .hero-heading em { font-style: normal; color: var(--accent); }
+    .hero-sub {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: var(--text-dim);
+      max-width: 42ch;
+      margin-bottom: 3rem;
+      line-height: 1.7;
+    }
+    .hero-actions { display: flex; align-items: center; gap: 2rem; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 1rem 2rem;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-ghost {
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+    .hero-scroll {
+      position: absolute;
+      right: var(--pad);
+      bottom: 5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .hero-scroll span {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      writing-mode: vertical-rl;
+    }
+    .scroll-line {
+      width: 1px; height: 60px;
+      background: linear-gradient(to bottom, var(--border), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 var(--pad);
+    }
+
+    /* ── SERVICES CAROUSEL ── */
+    #services { padding: 6rem 0 5rem; }
+
+    .services-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 var(--pad) 3rem;
+    }
+    .services-header-left {}
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .section-heading {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    /* scroll track */
+    .services-scroll-wrapper {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      cursor: grab;
+      padding: 0 var(--pad);
+    }
+    .services-scroll-wrapper:active { cursor: grabbing; }
+    .services-scroll-wrapper::-webkit-scrollbar { display: none; }
+
+    .services-track {
+      display: flex;
+      gap: 1.25rem;
+      width: max-content;
+      padding-right: var(--pad);
+    }
+
+    /* individual service card */
+    .scard {
+      flex-shrink: 0;
+      width: 360px;
+      min-height: 520px;
+      border-radius: 4px;
+      scroll-snap-align: start;
+      background: var(--card-bg, #1e3a8a);
+      display: flex;
+      flex-direction: column;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+    .scard:hover { transform: translateY(-4px); }
+
+    .scard > div:last-child { margin-top: auto; padding-top: 1.5rem; }
+
+    .scard-top {}
+    .scard-num {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 1.5rem;
+    }
+    .scard-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+      color: #fff;
+      line-height: 1.1;
+    }
+    .scard-desc {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.65;
+      margin-top: 0.75rem;
+      max-width: 28ch;
+    }
+
+    .scard-visual {
+      width: 100%;
+      height: 200px;
+      position: relative;
+      margin-top: auto;
+    }
+
+    .scard-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 1.25rem;
+    }
+    .scard-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 0.25rem 0.6rem;
+      border-radius: 2px;
+    }
+
+    /* services footer */
+    .services-footer {
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      padding: 2.5rem var(--pad) 0;
+    }
+    .services-arrows { display: flex; gap: 0.75rem; flex-shrink: 0; }
+    .arrow-btn {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .arrow-btn:hover { background: var(--surface); border-color: #333; }
+    .arrow-btn:disabled { opacity: 0.25; cursor: default; }
+
+    .services-footer-desc {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      max-width: 52ch;
+      line-height: 1.7;
+    }
+
+    /* ── NOISE-TO-SIGNAL SECTION ── */
+    #signal {
+      padding: 7rem var(--pad);
+      position: relative;
+    }
+    .signal-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: end;
+      margin-bottom: 4rem;
+    }
+    .signal-header .section-heading { margin-bottom: 0; }
+    .signal-header p {
+      font-size: 1rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+      align-self: end;
+    }
+    .signal-canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 340px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      background: #0d0d0d;
+    }
+    #signalCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .signal-labels {
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .signal-lbl {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      transition: color 0.6s;
+    }
+    .signal-lbl.active { color: var(--accent); }
+
+    /* ── MARQUEE ── */
+    .marquee-section {
+      padding: 2.5rem 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .marquee-track {
+      display: flex;
+      gap: 3rem;
+      animation: marquee 25s linear infinite;
+      white-space: nowrap;
+    }
+    .marquee-track:hover { animation-play-state: paused; }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .marquee-item {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+    }
+    .marquee-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ── ABOUT ── */
+    #about {
+      padding: 7rem var(--pad);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6rem;
+      align-items: center;
+    }
+    .about-left .section-heading { margin-bottom: 0; }
+    .about-right p {
+      font-size: 1.05rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3rem;
+      padding-top: 3rem;
+      border-top: 1px solid var(--border);
+    }
+    .stat-num {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2.2rem;
+      letter-spacing: -0.03em;
+    }
+    .stat-num span { color: var(--accent); }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+
+    /* ── CONTACT ── */
+    #contact {
+      padding: 7rem var(--pad);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6rem;
+      align-items: start;
+    }
+    .contact-left .section-heading { margin-bottom: 1.5rem; }
+    .contact-left p {
+      font-size: 1rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+      margin-bottom: 2.5rem;
+    }
+    .contact-detail { display: flex; flex-direction: column; gap: 1rem; }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .contact-item:hover { color: var(--text); }
+    .contact-item svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; }
+    .contact-form { display: flex; flex-direction: column; gap: 1rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field-group label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .field-group input,
+    .field-group textarea,
+    .field-group select {
+      background: #111;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      padding: 0.85rem 1rem;
+      border-radius: 2px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .field-group input:focus,
+    .field-group textarea:focus,
+    .field-group select:focus { border-color: var(--accent); }
+    .field-group textarea { resize: vertical; min-height: 130px; }
+    .field-group select option { background: #111; }
+    .form-submit { display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem; }
+    .form-submit p { font-size: 0.75rem; color: var(--text-muted); max-width: 28ch; line-height: 1.5; }
+    .btn-submit {
+      background: var(--accent);
+      color: var(--bg);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.9rem 2rem;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn-submit:hover { opacity: 0.85; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2.5rem var(--pad);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer .logo { font-size: 0.95rem; }
+    footer p { font-size: 0.75rem; color: var(--text-muted); }
+    .footer-links { display: flex; gap: 2rem; list-style: none; }
+    .footer-links a {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text-dim); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      :root { --pad: 1.5rem; }
+      .nav-links { display: none; }
+      #hero { padding: 0 var(--pad) 4rem; }
+      .hero-scroll { display: none; }
+      .scard { width: 300px; min-height: 460px; }
+      .signal-header { grid-template-columns: 1fr; gap: 1.5rem; }
+      .signal-canvas-wrap { height: 240px; }
+      #about { grid-template-columns: 1fr; gap: 2.5rem; }
+      #contact { grid-template-columns: 1fr; gap: 3rem; }
+      .form-row { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="navbar">
+    <a href="#" class="logo">
+      <svg class="logo-mark" width="26" height="19" viewBox="0 0 26 19" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="0"  y="0" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+        <rect x="9.5" y="0" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+        <rect x="19" y="0" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+        <rect x="9.5" y="11" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+      </svg>
+      TETRI <span>S.</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#services">Services</a></li>
+      <li><a href="#signal">Our approach</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact" class="nav-cta">Get in touch</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <p class="hero-eyebrow">Tetri Solutions</p>
+    <h1 class="hero-heading">We build things that <em>work</em>.</h1>
+    <p class="hero-sub">
+      From data-driven dashboards to polished digital products &mdash;
+      we combine analytical rigour with design precision to deliver
+      solutions that move the needle.
+    </p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-primary">
+        Start a project
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
+      </a>
+      <a href="#services" class="btn-primary">Explore services</a>
+    </div>
+    <div class="hero-scroll" aria-hidden="true">
+      <div class="scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- SERVICES CAROUSEL -->
+  <section id="services">
+    <div class="services-header">
+      <div class="services-header-left">
+        <p class="section-label">Services</p>
+        <h2 class="section-heading">What we do.</h2>
+      </div>
+    </div>
+
+    <div class="services-scroll-wrapper" id="servicesScroll">
+      <div class="services-track" id="servicesTrack">
+
+        <!-- Card 1: Web Dev -->
+        <div class="scard" style="--card-bg: #1a3a8f;">
+          <div class="scard-top">
+            <p class="scard-num">01 &mdash; Web Development</p>
+            <h3 class="scard-name">Web<br/>Development</h3>
+            <p class="scard-desc">Fast, scalable sites and apps built with modern tooling. We ship clean code that actually performs.</p>
+          </div>
+          <div>
+            <!-- Browser mockup SVG -->
+            <svg class="scard-visual" viewBox="0 0 310 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="310" height="180" rx="6" fill="rgba(0,0,20,0.5)"/>
+              <rect x="0" y="0" width="310" height="28" rx="6" fill="rgba(255,255,255,0.08)"/>
+              <circle cx="16" cy="14" r="4" fill="rgba(255,255,255,0.15)"/>
+              <circle cx="30" cy="14" r="4" fill="rgba(255,255,255,0.15)"/>
+              <circle cx="44" cy="14" r="4" fill="rgba(255,255,255,0.15)"/>
+              <rect x="64" y="7" width="180" height="14" rx="3" fill="rgba(255,255,255,0.08)"/>
+              <text x="154" y="18" fill="rgba(255,255,255,0.3)" font-size="7" text-anchor="middle" font-family="monospace">tetrisolutions.co.za</text>
+              <!-- Code lines -->
+              <rect x="16" y="42" width="40" height="6" rx="2" fill="#c8ff00" opacity="0.7"/>
+              <rect x="62" y="42" width="60" height="6" rx="2" fill="rgba(255,255,255,0.15)"/>
+              <rect x="128" y="42" width="40" height="6" rx="2" fill="rgba(147,197,253,0.4)"/>
+              <rect x="24" y="56" width="100" height="5" rx="2" fill="rgba(255,255,255,0.08)"/>
+              <rect x="24" y="68" width="80" height="5" rx="2" fill="rgba(255,255,255,0.08)"/>
+              <rect x="24" y="80" width="120" height="5" rx="2" fill="rgba(255,255,255,0.08)"/>
+              <rect x="16" y="96" width="50" height="6" rx="2" fill="rgba(253,224,71,0.4)"/>
+              <rect x="24" y="110" width="90" height="5" rx="2" fill="rgba(255,255,255,0.08)"/>
+              <rect x="24" y="122" width="70" height="5" rx="2" fill="rgba(255,255,255,0.08)"/>
+              <rect x="16" y="138" width="60" height="6" rx="2" fill="#c8ff00" opacity="0.5"/>
+              <rect x="82" y="138" width="30" height="6" rx="2" fill="rgba(255,255,255,0.12)"/>
+              <!-- cursor blink -->
+              <rect x="114" y="138" width="2" height="7" rx="1" fill="rgba(255,255,255,0.6)">
+                <animate attributeName="opacity" values="1;0;1" dur="1.2s" repeatCount="indefinite"/>
+              </rect>
+              <rect x="24" y="152" width="110" height="5" rx="2" fill="rgba(255,255,255,0.08)"/>
+            </svg>
+            <div class="scard-tags">
+              <span class="scard-tag">React</span>
+              <span class="scard-tag">Next.js</span>
+              <span class="scard-tag">APIs</span>
+              <span class="scard-tag">Full Stack</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Data Analytics -->
+        <div class="scard" style="--card-bg: #b94a00;">
+          <div class="scard-top">
+            <p class="scard-num">02 &mdash; Data Analytics</p>
+            <h3 class="scard-name">Data<br/>Analytics</h3>
+            <p class="scard-desc">Turn raw data into decisions. Dashboards and pipelines that surface the insight you actually need.</p>
+          </div>
+          <div>
+            <!-- Animated chart SVG -->
+            <svg class="scard-visual" viewBox="0 0 310 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- axes -->
+              <line x1="30" y1="20" x2="30" y2="150" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+              <line x1="30" y1="150" x2="290" y2="150" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+              <!-- grid lines -->
+              <line x1="30" y1="55" x2="290" y2="55" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4,4"/>
+              <line x1="30" y1="90" x2="290" y2="90" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4,4"/>
+              <line x1="30" y1="120" x2="290" y2="120" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="4,4"/>
+              <!-- area fill -->
+              <path d="M30 130 L75 110 L120 100 L165 75 L210 85 L255 45 L290 50 L290 150 L30 150 Z" fill="rgba(255,255,255,0.06)"/>
+              <!-- line -->
+              <path d="M30 130 L75 110 L120 100 L165 75 L210 85 L255 45 L290 50" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <animate attributeName="stroke-dasharray" from="0,400" to="400,0" dur="1.8s" begin="0.2s" fill="freeze"/>
+              </path>
+              <!-- data points -->
+              <circle cx="30" cy="130" r="4" fill="#fff" opacity="0.5"/>
+              <circle cx="75" cy="110" r="4" fill="#fff" opacity="0.5"/>
+              <circle cx="120" cy="100" r="4" fill="#fff" opacity="0.5"/>
+              <circle cx="165" cy="75" r="4" fill="#fff" opacity="0.5"/>
+              <circle cx="210" cy="85" r="4" fill="#fff" opacity="0.5"/>
+              <!-- highlight point -->
+              <circle cx="255" cy="45" r="7" fill="rgba(255,140,60,0.3)" stroke="rgba(255,140,60,0.8)" stroke-width="1.5"/>
+              <circle cx="255" cy="45" r="3" fill="#fff"/>
+              <!-- callout -->
+              <rect x="220" y="20" width="68" height="20" rx="3" fill="rgba(255,140,60,0.9)"/>
+              <text x="254" y="33" fill="#fff" font-size="9" text-anchor="middle" font-family="Inter, sans-serif" font-weight="600">+38% ↑</text>
+              <circle cx="290" cy="50" r="4" fill="#fff" opacity="0.5"/>
+              <!-- x labels -->
+              <text x="30" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Jan</text>
+              <text x="75" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Feb</text>
+              <text x="120" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Mar</text>
+              <text x="165" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Apr</text>
+              <text x="210" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">May</text>
+              <text x="255" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Jun</text>
+              <text x="290" y="164" fill="rgba(255,255,255,0.25)" font-size="7" text-anchor="middle" font-family="Inter, sans-serif">Jul</text>
+            </svg>
+            <div class="scard-tags">
+              <span class="scard-tag">Dashboards</span>
+              <span class="scard-tag">Power BI</span>
+              <span class="scard-tag">Python</span>
+              <span class="scard-tag">SQL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: UI/UX -->
+        <div class="scard" style="--card-bg: #0f6b60;">
+          <div class="scard-top">
+            <p class="scard-num">03 &mdash; UI / UX Design</p>
+            <h3 class="scard-name">UI / UX<br/>Design</h3>
+            <p class="scard-desc">Beautiful, purposeful interfaces. We design systems and experiences grounded in user behaviour.</p>
+          </div>
+          <div>
+            <!-- UI mockup floating cards -->
+            <svg class="scard-visual" viewBox="0 0 310 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- back card -->
+              <rect x="10" y="30" width="200" height="130" rx="8" fill="rgba(0,0,0,0.35)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+              <rect x="22" y="42" width="80" height="8" rx="3" fill="rgba(255,255,255,0.2)"/>
+              <rect x="22" y="56" width="120" height="6" rx="2" fill="rgba(255,255,255,0.1)"/>
+              <rect x="22" y="68" width="100" height="6" rx="2" fill="rgba(255,255,255,0.08)"/>
+              <!-- color swatches -->
+              <rect x="22" y="88" width="20" height="20" rx="4" fill="#c8ff00"/>
+              <rect x="48" y="88" width="20" height="20" rx="4" fill="rgba(255,255,255,0.3)"/>
+              <rect x="74" y="88" width="20" height="20" rx="4" fill="rgba(255,255,255,0.12)"/>
+              <rect x="100" y="88" width="20" height="20" rx="4" fill="rgba(255,255,255,0.06)"/>
+              <rect x="22" y="120" width="60" height="22" rx="4" fill="rgba(255,255,255,0.15)"/>
+              <text x="52" y="135" fill="rgba(255,255,255,0.5)" font-size="8" text-anchor="middle" font-family="Inter, sans-serif">Publish</text>
+              <!-- front floating card (tooltip-style) -->
+              <rect x="140" y="60" width="160" height="88" rx="8" fill="rgba(15,80,70,0.95)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              <text x="156" y="80" fill="rgba(255,255,255,0.5)" font-size="7" font-family="Inter, sans-serif">COMPONENTS</text>
+              <rect x="156" y="88" width="50" height="24" rx="5" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              <rect x="214" y="88" width="50" height="24" rx="5" fill="#c8ff00"/>
+              <text x="181" y="103" fill="rgba(255,255,255,0.4)" font-size="8" text-anchor="middle" font-family="Inter, sans-serif">Ghost</text>
+              <text x="239" y="103" fill="rgba(0,0,0,0.8)" font-size="8" text-anchor="middle" font-family="Inter, sans-serif" font-weight="600">Primary</text>
+              <rect x="156" y="122" width="130" height="16" rx="3" fill="rgba(255,255,255,0.06)"/>
+              <!-- cursor -->
+              <path d="M118 148 L118 165 L122 161 L126 170 L128 169 L124 160 L130 160 Z" fill="rgba(255,255,255,0.7)"/>
+            </svg>
+            <div class="scard-tags">
+              <span class="scard-tag">Figma</span>
+              <span class="scard-tag">Prototyping</span>
+              <span class="scard-tag">Branding</span>
+              <span class="scard-tag">Design Systems</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: AI -->
+        <div class="scard" style="--card-bg: #3b1f7a;">
+          <div class="scard-top">
+            <p class="scard-num">04 &mdash; AI Integrations</p>
+            <h3 class="scard-name">AI<br/>Integrations</h3>
+            <p class="scard-desc">Practical AI that fits your workflow. LLM-powered tools and automations embedded directly in your products.</p>
+          </div>
+          <div>
+            <!-- Neural net SVG with pulse animation -->
+            <svg class="scard-visual" viewBox="0 0 310 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- connections layer 1→2 -->
+              <line x1="60" y1="40" x2="155" y2="30" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <line x1="60" y1="40" x2="155" y2="70" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <line x1="60" y1="40" x2="155" y2="110" stroke="rgba(200,255,0,0.08)" stroke-width="1"/>
+              <line x1="60" y1="90" x2="155" y2="30" stroke="rgba(200,255,0,0.08)" stroke-width="1"/>
+              <line x1="60" y1="90" x2="155" y2="70" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <line x1="60" y1="90" x2="155" y2="110" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <line x1="60" y1="90" x2="155" y2="150" stroke="rgba(200,255,0,0.08)" stroke-width="1"/>
+              <line x1="60" y1="140" x2="155" y2="70" stroke="rgba(200,255,0,0.08)" stroke-width="1"/>
+              <line x1="60" y1="140" x2="155" y2="110" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <line x1="60" y1="140" x2="155" y2="150" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <!-- connections layer 2→3 -->
+              <line x1="155" y1="30" x2="250" y2="55" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <line x1="155" y1="70" x2="250" y2="55" stroke="rgba(200,255,0,0.2)" stroke-width="1.5"/>
+              <line x1="155" y1="70" x2="250" y2="115" stroke="rgba(200,255,0,0.1)" stroke-width="1"/>
+              <line x1="155" y1="110" x2="250" y2="55" stroke="rgba(200,255,0,0.1)" stroke-width="1"/>
+              <line x1="155" y1="110" x2="250" y2="115" stroke="rgba(200,255,0,0.2)" stroke-width="1.5"/>
+              <line x1="155" y1="150" x2="250" y2="115" stroke="rgba(200,255,0,0.15)" stroke-width="1"/>
+              <!-- layer 1 nodes -->
+              <circle cx="60" cy="40" r="8" fill="rgba(200,255,0,0.15)" stroke="rgba(200,255,0,0.5)" stroke-width="1.5"/>
+              <circle cx="60" cy="90" r="8" fill="rgba(200,255,0,0.3)" stroke="#c8ff00" stroke-width="1.5">
+                <animate attributeName="r" values="8;11;8" dur="2s" repeatCount="indefinite"/>
+                <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="60" cy="140" r="8" fill="rgba(200,255,0,0.15)" stroke="rgba(200,255,0,0.5)" stroke-width="1.5"/>
+              <!-- layer 2 nodes -->
+              <circle cx="155" cy="30" r="7" fill="rgba(200,255,0,0.1)" stroke="rgba(200,255,0,0.3)" stroke-width="1"/>
+              <circle cx="155" cy="70" r="9" fill="rgba(200,255,0,0.25)" stroke="rgba(200,255,0,0.7)" stroke-width="1.5">
+                <animate attributeName="r" values="9;12;9" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="155" cy="110" r="9" fill="rgba(200,255,0,0.25)" stroke="rgba(200,255,0,0.7)" stroke-width="1.5">
+                <animate attributeName="r" values="9;12;9" dur="2.4s" begin="0.8s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="155" cy="150" r="7" fill="rgba(200,255,0,0.1)" stroke="rgba(200,255,0,0.3)" stroke-width="1"/>
+              <!-- layer 3 nodes (output) -->
+              <circle cx="250" cy="55" r="10" fill="rgba(200,255,0,0.35)" stroke="#c8ff00" stroke-width="2">
+                <animate attributeName="r" values="10;14;10" dur="1.8s" begin="0.6s" repeatCount="indefinite"/>
+              </circle>
+              <circle cx="250" cy="115" r="10" fill="rgba(200,255,0,0.35)" stroke="#c8ff00" stroke-width="2">
+                <animate attributeName="r" values="10;14;10" dur="1.8s" begin="1.2s" repeatCount="indefinite"/>
+              </circle>
+              <!-- output labels -->
+              <text x="265" y="59" fill="rgba(200,255,0,0.7)" font-size="8" font-family="Inter, sans-serif" font-weight="600">Insight</text>
+              <text x="265" y="119" fill="rgba(200,255,0,0.7)" font-size="8" font-family="Inter, sans-serif" font-weight="600">Action</text>
+            </svg>
+            <div class="scard-tags">
+              <span class="scard-tag">LLMs</span>
+              <span class="scard-tag">Automation</span>
+              <span class="scard-tag">Claude API</span>
+              <span class="scard-tag">RAG</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="services-footer">
+      <div class="services-arrows">
+        <button class="arrow-btn" id="sPrev" aria-label="Previous">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4l-5 5 5 5"/></svg>
+        </button>
+        <button class="arrow-btn" id="sNext" aria-label="Next">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4l5 5-5 5"/></svg>
+        </button>
+      </div>
+      <p class="services-footer-desc">
+        We work across the full stack &mdash; strategy, design, data, and engineering &mdash;
+        so you get one partner instead of four.
+      </p>
+    </div>
+  </section>
+
+  <!-- NOISE TO SIGNAL -->
+  <section id="signal">
+    <div class="signal-header">
+      <div>
+        <p class="section-label">Our approach</p>
+        <h2 class="section-heading">Signal from<br/>the noise.</h2>
+      </div>
+      <p>
+        Most businesses are drowning in data they can't read. We find the thread.
+        Whether it's a messy spreadsheet or a firehose of events, we translate
+        raw information into decisions you can act on &mdash; clearly, quickly, and
+        without the noise.
+      </p>
+    </div>
+
+    <div class="signal-canvas-wrap">
+      <canvas id="signalCanvas"></canvas>
+      <div class="signal-labels">
+        <span class="signal-lbl" id="lblNoise">Raw data &mdash; noise</span>
+        <span class="signal-lbl" id="lblSignal">Insight &mdash; signal</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-section" aria-hidden="true">
+    <div class="marquee-track">
+      <span class="marquee-item">Web Development <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Data Analytics <span class="marquee-dot"></span></span>
+      <span class="marquee-item">UI / UX Design <span class="marquee-dot"></span></span>
+      <span class="marquee-item">AI Integrations <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Full Stack <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Dashboards <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Automation <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Design Systems <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Web Development <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Data Analytics <span class="marquee-dot"></span></span>
+      <span class="marquee-item">UI / UX Design <span class="marquee-dot"></span></span>
+      <span class="marquee-item">AI Integrations <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Full Stack <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Dashboards <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Automation <span class="marquee-dot"></span></span>
+      <span class="marquee-item">Design Systems <span class="marquee-dot"></span></span>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="about-left">
+      <p class="section-label">About us</p>
+      <h2 class="section-heading">Small team.<br/>Big output.</h2>
+      <div class="stats-row">
+        <div>
+          <div class="stat-num">4<span>+</span></div>
+          <div class="stat-label">Service areas</div>
+        </div>
+        <div>
+          <div class="stat-num">100<span>%</span></div>
+          <div class="stat-label">Custom work</div>
+        </div>
+        <div>
+          <div class="stat-num">1<span>×</span></div>
+          <div class="stat-label">Partner, not vendor</div>
+        </div>
+      </div>
+    </div>
+    <div class="about-right">
+      <p>
+        Tetri Solutions is a digital studio that bridges the gap between
+        analytical thinking and creative execution. We don't believe in choosing between
+        a site that looks good and one that performs well &mdash; you get both.
+      </p>
+      <p>
+        Whether you're a startup that needs an MVP shipped fast, a business that needs
+        to understand its data, or a product team that needs design and engineering
+        working in lockstep &mdash; we're built for that.
+      </p>
+      <a href="#contact" class="btn-primary" style="display:inline-flex;">
+        Work with us
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="contact-left">
+      <p class="section-label">Get in touch</p>
+      <h2 class="section-heading">Let's build<br/>something.</h2>
+      <p>
+        Tell us about your project and we'll get back to you within 24 hours.
+        No lengthy onboarding, no unnecessary meetings &mdash; just a straight
+        conversation about what you need.
+      </p>
+      <div class="contact-detail">
+        <a href="mailto:hello@tetrisolutions.co.za" class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+          hello@tetrisolutions.co.za
+        </a>
+        <span class="contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          Kingston, Jamaica
+        </span>
+      </div>
+    </div>
+
+    <form class="contact-form" name="contact" method="POST" data-netlify="true" onsubmit="handleSubmit(event)">
+      <input type="hidden" name="form-name" value="contact" />
+      <div class="form-row">
+        <div class="field-group">
+          <label for="fname">First name</label>
+          <input type="text" id="fname" name="fname" placeholder="John" required />
+        </div>
+        <div class="field-group">
+          <label for="lname">Last name</label>
+          <input type="text" id="lname" name="lname" placeholder="Doe" required />
+        </div>
+      </div>
+      <div class="field-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="john@company.com" required />
+      </div>
+      <div class="field-group">
+        <label for="service">Service</label>
+        <select id="service" name="service">
+          <option value="">Select a service...</option>
+          <option>Web Development</option>
+          <option>Data Analytics</option>
+          <option>UI / UX Design</option>
+          <option>AI Integrations</option>
+          <option>Not sure yet</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="Tell us about your project, timeline, and budget..." required></textarea>
+      </div>
+      <div class="form-submit">
+        <p>We typically respond within one business day.</p>
+        <button type="submit" class="btn-submit">Send message &rarr;</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <a href="#" class="logo">
+      <svg class="logo-mark" width="26" height="19" viewBox="0 0 26 19" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="0"  y="0" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+        <rect x="9.5" y="0" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+        <rect x="19" y="0" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+        <rect x="9.5" y="11" width="7" height="7" rx="1.5" fill="#c8ff00"/>
+      </svg>
+      TETRI <span>S.</span>
+    </a>
+    <p>&copy; 2026 Tetri Solutions. All rights reserved.</p>
+    <ul class="footer-links">
+      <li><a href="#services">Services</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </footer>
+
+  <script>
+    /* ── Hero Tetris canvas ── */
+    (function () {
+      const HC = document.getElementById('heroCanvas');
+      const HX = HC.getContext('2d');
+      let HW, HH;
+
+      const CELL = 46;
+      const SHAPES = [
+        [[0,0],[0,1],[0,2],[1,1]],    // T
+        [[0,0],[1,0],[2,0],[2,1]],    // L
+        [[0,0],[1,0],[2,0],[2,-1]],   // J
+        [[0,0],[0,1],[1,1],[1,2]],    // Z
+        [[0,1],[0,2],[1,0],[1,1]],    // S
+        [[0,0],[1,0],[2,0],[3,0]],    // I
+        [[0,0],[0,1],[1,0],[1,1]],    // O
+      ];
+      const TAGS = ['+38%','Q4','2.4k','ROI','MAU','CTR','>99%','3.2x','∑','$12M','KPI','YoY'];
+
+      let staticPieces = [];
+      let falling = [];
+      let spawnTick = 0;
+
+      function resizeHero() {
+        HW = HC.width  = HC.offsetWidth;
+        HH = HC.height = HC.offsetHeight;
+        buildStatic();
+      }
+
+      function buildStatic() {
+        staticPieces = [];
+        const cols = Math.floor(HW / CELL);
+        const rows = Math.floor(HH / CELL);
+        const rightEdge = Math.floor(cols * 0.38); // keep left portion clear for text
+
+        for (let i = 0; i < 22; i++) {
+          const shape  = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+          const col    = rightEdge + Math.floor(Math.random() * (cols - rightEdge - 3));
+          const row    = Math.floor(Math.random() * (rows - 1));
+          const accent = Math.random() > 0.65;
+          staticPieces.push({
+            shape, x: col * CELL, y: row * CELL,
+            fill:   accent ? 0.07 : 0.04,
+            stroke: accent ? 0.22 : 0.10,
+            label:  Math.random() > 0.52 ? TAGS[Math.floor(Math.random() * TAGS.length)] : null,
+            accent,
+          });
+        }
+      }
+
+      function drawPiece(px, py, shape, fill, stroke, label, accent) {
+        const S = CELL - 4, R = 3;
+        shape.forEach(([r, c]) => {
+          const x = px + c * CELL, y = py + r * CELL;
+          HX.beginPath();
+          HX.moveTo(x + R, y);
+          HX.lineTo(x + S - R, y);   HX.arcTo(x + S, y,     x + S, y + R,     R);
+          HX.lineTo(x + S, y + S - R); HX.arcTo(x + S, y + S, x + S - R, y + S, R);
+          HX.lineTo(x + R, y + S);   HX.arcTo(x,     y + S, x,     y + S - R, R);
+          HX.lineTo(x, y + R);       HX.arcTo(x,     y,     x + R, y,         R);
+          HX.closePath();
+          HX.fillStyle   = accent ? `rgba(200,255,0,${fill})`   : `rgba(255,255,255,${fill})`;
+          HX.strokeStyle = accent ? `rgba(200,255,0,${stroke})` : `rgba(255,255,255,${stroke})`;
+          HX.lineWidth = 1;
+          HX.fill();
+          HX.stroke();
+        });
+
+        if (label) {
+          const [lr, lc] = shape[Math.floor(shape.length / 2)];
+          HX.fillStyle = accent
+            ? `rgba(200,255,0,${Math.min(fill * 6, 0.55)})`
+            : `rgba(255,255,255,${Math.min(fill * 5, 0.4)})`;
+          HX.font = 'bold 8px Inter, monospace';
+          HX.textAlign = 'center';
+          HX.fillText(label, px + lc * CELL + CELL / 2, py + lr * CELL + CELL / 2 + 3);
+        }
+      }
+
+      function spawnFalling() {
+        const cols = Math.floor(HW / CELL);
+        const col  = Math.floor(cols * 0.38 + Math.random() * cols * 0.55);
+        const accent = Math.random() > 0.5;
+        falling.push({
+          shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+          x: col * CELL, y: -CELL * 5,
+          vy: 0.28 + Math.random() * 0.32,
+          fill:   accent ? 0.09 : 0.05,
+          stroke: accent ? 0.28 : 0.12,
+          label:  Math.random() > 0.55 ? TAGS[Math.floor(Math.random() * TAGS.length)] : null,
+          accent,
+        });
+      }
+
+      function heroLoop() {
+        HX.clearRect(0, 0, HW, HH);
+        staticPieces.forEach(p => drawPiece(p.x, p.y, p.shape, p.fill, p.stroke, p.label, p.accent));
+
+        spawnTick++;
+        if (spawnTick > 160 && falling.length < 4) { spawnFalling(); spawnTick = 0; }
+
+        falling = falling.filter(p => p.y < HH + CELL * 5);
+        falling.forEach(p => { p.y += p.vy; drawPiece(p.x, p.y, p.shape, p.fill, p.stroke, p.label, p.accent); });
+
+        requestAnimationFrame(heroLoop);
+      }
+
+      window.addEventListener('resize', resizeHero);
+      resizeHero();
+      heroLoop();
+    })();
+
+    /* ── Nav scroll ── */
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    /* ── Services carousel ── */
+    const scroll = document.getElementById('servicesScroll');
+    const prev   = document.getElementById('sPrev');
+    const next   = document.getElementById('sNext');
+    const cardW  = () => scroll.querySelector('.scard').offsetWidth + 20;
+
+    next.addEventListener('click', () => scroll.scrollBy({ left: cardW(), behavior: 'smooth' }));
+    prev.addEventListener('click', () => scroll.scrollBy({ left: -cardW(), behavior: 'smooth' }));
+
+    // Drag to scroll
+    let isDragging = false, startX = 0, startScrollLeft = 0;
+    scroll.addEventListener('mousedown', e => {
+      isDragging = true;
+      startX = e.pageX - scroll.offsetLeft;
+      startScrollLeft = scroll.scrollLeft;
+    });
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const x = e.pageX - scroll.offsetLeft;
+      scroll.scrollLeft = startScrollLeft - (x - startX);
+    });
+    document.addEventListener('mouseup', () => { isDragging = false; });
+
+    /* ── Noise-to-Signal canvas ── */
+    const canvas  = document.getElementById('signalCanvas');
+    const ctx     = canvas.getContext('2d');
+    let W, H, particles = [], state = 'noise', transProgress = 0, animId;
+
+    const POINTS = [
+      { label: 'Jan', value: 0.28 },
+      { label: 'Feb', value: 0.41 },
+      { label: 'Mar', value: 0.36 },
+      { label: 'Apr', value: 0.58 },
+      { label: 'May', value: 0.72 },
+      { label: 'Jun', value: 0.65 },
+      { label: 'Jul', value: 0.89 },
+    ];
+    const ACCENT = '#c8ff00';
+    const PER_POINT = 38;
+    const CLUSTER_R = 12; // radius particles cluster around each point
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      W = canvas.width  = rect.width;
+      H = canvas.height = rect.height;
+      if (state !== 'noise') return;
+      initParticles();
+    }
+
+    function pointGeometry(i) {
+      const PAD_L = W * 0.08, PAD_R = W * 0.06;
+      const PAD_B = H * 0.22, PAD_T = H * 0.12;
+      const usableW = W - PAD_L - PAD_R;
+      const usableH = H - PAD_T - PAD_B;
+      const px = PAD_L + (i / (POINTS.length - 1)) * usableW;
+      const py = H - PAD_B - POINTS[i].value * usableH;
+      return { x: px, y: py, label: POINTS[i].label, bottomY: H - PAD_B };
+    }
+
+    function initParticles() {
+      particles = [];
+      POINTS.forEach((_, pi) => {
+        const g = pointGeometry(pi);
+        for (let j = 0; j < PER_POINT; j++) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = Math.random() * CLUSTER_R;
+          particles.push({
+            x:  Math.random() * W,
+            y:  Math.random() * H,
+            vx: (Math.random() - 0.5) * 0.9,
+            vy: (Math.random() - 0.5) * 0.9,
+            tx: g.x + Math.cos(angle) * r,
+            ty: g.y + Math.sin(angle) * r,
+            size: Math.random() * 1.6 + 0.6,
+            pi,
+          });
+        }
+      });
+    }
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function drawNoise() {
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      // random number sprites
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.font = '11px monospace';
+      ['4.2', '18%', '∑', '0.91', '↑', 'n=', '0x3F', 'μ', '99', 'σ²', '∞', '3.14'].forEach((t, i) => {
+        const rx = (i * 97 + 40) % W;
+        const ry = (i * 113 + 30) % H;
+        ctx.fillText(t, rx, ry);
+      });
+    }
+
+    function drawTransition() {
+      const ease = easeInOut(transProgress);
+      transProgress += 0.007;
+
+      // draw partial line between converged points
+      if (ease > 0.5) {
+        const lineEase = (ease - 0.5) * 2;
+        const pts = POINTS.map((_, i) => pointGeometry(i));
+        ctx.save();
+        ctx.strokeStyle = `rgba(200,255,0,${lineEase * 0.7})`;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      particles.forEach(p => {
+        p.x += p.vx * (1 - ease);
+        p.y += p.vy * (1 - ease);
+        const cx = p.x + (p.tx - p.x) * ease;
+        const cy = p.y + (p.ty - p.y) * ease;
+        const alpha = 0.3 + ease * 0.7;
+        ctx.fillStyle = `rgba(200,255,0,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, p.size * (1 + ease * 0.4), 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      if (transProgress >= 1) {
+        state = 'signal';
+        document.getElementById('lblNoise').classList.remove('active');
+        document.getElementById('lblSignal').classList.add('active');
+        setTimeout(() => {
+          state = 'noise';
+          transProgress = 0;
+          document.getElementById('lblNoise').classList.add('active');
+          document.getElementById('lblSignal').classList.remove('active');
+          initParticles();
+        }, 4200);
+      }
+    }
+
+    function drawSignal() {
+      const pts = POINTS.map((_, i) => pointGeometry(i));
+
+      // grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      [0.25, 0.5, 0.75, 1.0].forEach(v => {
+        const PAD_T = H * 0.12, PAD_B = H * 0.22;
+        const y = H - PAD_B - v * (H - PAD_T - PAD_B);
+        ctx.beginPath();
+        ctx.moveTo(W * 0.06, y);
+        ctx.lineTo(W * 0.94, y);
+        ctx.stroke();
+      });
+
+      // area fill under line
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].bottomY);
+      pts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].bottomY);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, H * 0.12, 0, H);
+      grad.addColorStop(0, 'rgba(200,255,0,0.12)');
+      grad.addColorStop(1, 'rgba(200,255,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // x-axis line
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x - W * 0.04, pts[0].bottomY);
+      ctx.lineTo(pts[pts.length - 1].x + W * 0.04, pts[pts.length - 1].bottomY);
+      ctx.stroke();
+
+      // main line
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      pts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.stroke();
+
+      // data points + labels
+      pts.forEach((p, i) => {
+        const isHigh = POINTS[i].value === Math.max(...POINTS.map(p => p.value));
+
+        // outer glow on peak
+        if (isHigh) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(200,255,0,0.15)';
+          ctx.fill();
+        }
+
+        // dot
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isHigh ? 6 : 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = isHigh ? ACCENT : 'rgba(200,255,0,0.7)';
+        ctx.fill();
+
+        // value callout on peak
+        if (isHigh) {
+          ctx.fillStyle = ACCENT;
+          ctx.fillRect(p.x - 20, p.y - 28, 40, 18);
+          ctx.fillStyle = '#090909';
+          ctx.font = 'bold 10px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(Math.round(POINTS[i].value * 100) + '%', p.x, p.y - 15);
+        }
+
+        // x-axis label
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.label, p.x, p.bottomY + 18);
+      });
+    }
+
+    function loop() {
+      ctx.clearRect(0, 0, W, H);
+      if      (state === 'noise')       drawNoise();
+      else if (state === 'transitioning') drawTransition();
+      else if (state === 'signal')      drawSignal();
+      animId = requestAnimationFrame(loop);
+    }
+
+    // Intersection observer triggers transition
+    const signalObs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && state === 'noise') {
+        state = 'transitioning';
+        transProgress = 0;
+        document.getElementById('lblNoise').classList.add('active');
+      }
+    }, { threshold: 0.5 });
+
+    const signalSection = document.getElementById('signal');
+    signalObs.observe(signalSection);
+
+    // Init
+    resize();
+    window.addEventListener('resize', resize);
+    loop();
+
+    /* ── Form ── */
+    function handleSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn  = form.querySelector('.btn-submit');
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(new FormData(form)).toString(),
+      })
+        .then(() => {
+          btn.textContent = 'Sent ✓';
+          btn.style.opacity = '0.6';
+          form.reset();
+        })
+        .catch(() => {
+          btn.textContent = 'Error — try again';
+          btn.style.background = '#ff4444';
+          btn.disabled = false;
+        });
+    }
+  </script>
+
+</body>
+</html>
