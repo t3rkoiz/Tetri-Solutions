@@ -248,7 +248,24 @@
       overflow: hidden;
       transition: transform 0.3s ease;
     }
-    .scard:hover { transform: translateY(-4px); }
+    /* entrance animation */
+    @keyframes cardRise {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .scard {
+      opacity: 0; /* hidden until JS triggers */
+    }
+    .scard.in-view {
+      animation: cardRise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .scard:nth-child(1).in-view { animation-delay: 0s;    }
+    .scard:nth-child(2).in-view { animation-delay: 0.1s;  }
+    .scard:nth-child(3).in-view { animation-delay: 0.2s;  }
+    .scard:nth-child(4).in-view { animation-delay: 0.3s;  }
+
+    .scard.in-view:hover { transform: translateY(-4px); }
 
     .scard > div:last-child { margin-top: auto; padding-top: 1.5rem; }
 
@@ -543,6 +560,16 @@
       transition: color 0.2s;
     }
     .footer-links a:hover { color: var(--text-dim); }
+
+    /* ── LARGE SCREEN: all cards visible, no scroll, no arrows ── */
+    @media (min-width: 901px) {
+      .services-scroll-wrapper { overflow-x: visible; cursor: default; }
+      .services-scroll-wrapper:active { cursor: default; }
+      .services-track { width: 100%; padding-right: 0; }
+      .scard { flex: 1; width: auto; min-width: 0; }
+      .services-arrows { display: none; }
+      .services-footer { padding-top: 2rem; }
+    }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
@@ -949,7 +976,7 @@
       </div>
     </div>
 
-    <form class="contact-form" name="contact" method="POST" data-netlify="true" onsubmit="handleSubmit(event)">
+    <form class="contact-form" name="contact" netlify method="POST"  onsubmit="handleSubmit(event)">
       <input type="hidden" name="form-name" value="contact" />
       <div class="form-row">
         <div class="field-group">
@@ -1011,106 +1038,123 @@
     (function () {
       const HC = document.getElementById('heroCanvas');
       const HX = HC.getContext('2d');
-      let HW, HH;
+      let HW, HH, pieces = [];
 
-      const CELL = 46;
+      const CELL = 44;
+      const N    = 10; // concurrent pieces
+
       const SHAPES = [
-        [[0,0],[0,1],[0,2],[1,1]],    // T
-        [[0,0],[1,0],[2,0],[2,1]],    // L
-        [[0,0],[1,0],[2,0],[2,-1]],   // J
-        [[0,0],[0,1],[1,1],[1,2]],    // Z
-        [[0,1],[0,2],[1,0],[1,1]],    // S
-        [[0,0],[1,0],[2,0],[3,0]],    // I
-        [[0,0],[0,1],[1,0],[1,1]],    // O
+        [[0,0],[0,1],[0,2],[1,1]],   // T
+        [[0,0],[1,0],[2,0],[2,1]],   // L
+        [[0,0],[1,0],[2,0],[2,-1]],  // J
+        [[0,0],[0,1],[1,1],[1,2]],   // Z
+        [[0,1],[0,2],[1,0],[1,1]],   // S
+        [[0,0],[1,0],[2,0],[3,0]],   // I
+        [[0,0],[0,1],[1,0],[1,1]],   // O
       ];
       const TAGS = ['+38%','Q4','2.4k','ROI','MAU','CTR','>99%','3.2x','∑','$12M','KPI','YoY'];
 
-      let staticPieces = [];
-      let falling = [];
-      let spawnTick = 0;
-
-      function resizeHero() {
-        HW = HC.width  = HC.offsetWidth;
-        HH = HC.height = HC.offsetHeight;
-        buildStatic();
+      /* shape metrics */
+      function sInfo(shape) {
+        let r0=Infinity,r1=-Infinity,c0=Infinity,c1=-Infinity;
+        shape.forEach(([r,c])=>{ r0=Math.min(r0,r); r1=Math.max(r1,r); c0=Math.min(c0,c); c1=Math.max(c1,c); });
+        return { w:(c1-c0+1)*CELL, h:(r1-r0+1)*CELL, ox:c0*CELL, oy:r0*CELL };
       }
 
-      function buildStatic() {
-        staticPieces = [];
-        const cols = Math.floor(HW / CELL);
-        const rows = Math.floor(HH / CELL);
-        const rightEdge = Math.floor(cols * 0.38); // keep left portion clear for text
+      function bb(p) {
+        const s = sInfo(p.shape);
+        return { x: p.x+s.ox, y: p.y+s.oy, w: s.w, h: s.h };
+      }
 
-        for (let i = 0; i < 22; i++) {
-          const shape  = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-          const col    = rightEdge + Math.floor(Math.random() * (cols - rightEdge - 3));
-          const row    = Math.floor(Math.random() * (rows - 1));
-          const accent = Math.random() > 0.65;
-          staticPieces.push({
-            shape, x: col * CELL, y: row * CELL,
-            fill:   accent ? 0.07 : 0.04,
-            stroke: accent ? 0.22 : 0.10,
-            label:  Math.random() > 0.52 ? TAGS[Math.floor(Math.random() * TAGS.length)] : null,
-            accent,
-          });
+      /* find an x that doesn't horizontally overlap pieces currently near the top */
+      function spawnX(shape) {
+        const s   = sInfo(shape);
+        const lo  = -s.ox + 4;
+        const hi  = HW - s.ox - s.w - 4;
+        for (let t = 0; t < 30; t++) {
+          const x  = lo + Math.random() * (hi - lo);
+          const nx = x + s.ox, nw = s.w;
+          let clear = true;
+          for (const p of pieces) {
+            const b = bb(p);
+            if (b.y > CELL * 6) continue;               // piece is already well below top
+            if (nx < b.x + b.w + 8 && nx + nw + 8 > b.x) { clear = false; break; }
+          }
+          if (clear) return x;
+        }
+        return lo + Math.random() * (hi - lo);           // fallback
+      }
+
+      function applyStyle(p) {
+        const accent = Math.random() > 0.58;
+        p.accent = accent;
+        p.fill   = accent ? 0.11 : 0.055;
+        p.stroke = accent ? 0.30 : 0.13;
+        p.vy     = 0.40 + Math.random() * 0.50;
+        p.label  = Math.random() > 0.52 ? TAGS[Math.floor(Math.random() * TAGS.length)] : null;
+      }
+
+      function resetPiece(p) {
+        p.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+        p.x = spawnX(p.shape);
+        p.y = -sInfo(p.shape).h - 20;
+        applyStyle(p);
+      }
+
+      function initPieces() {
+        pieces = [];
+        /* stagger initial y across the full canvas so it's populated from the start */
+        for (let i = 0; i < N; i++) {
+          const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+          const s     = sInfo(shape);
+          const x     = spawnX(shape);
+          const y     = (i / N) * HH - s.oy + Math.random() * (HH / N * 0.8);
+          const p     = { shape, x, y };
+          applyStyle(p);
+          pieces.push(p);
         }
       }
 
-      function drawPiece(px, py, shape, fill, stroke, label, accent) {
+      function drawPiece(p) {
         const S = CELL - 4, R = 3;
-        shape.forEach(([r, c]) => {
-          const x = px + c * CELL, y = py + r * CELL;
+        p.shape.forEach(([r, c]) => {
+          const x = p.x + c * CELL, y = p.y + r * CELL;
           HX.beginPath();
-          HX.moveTo(x + R, y);
-          HX.lineTo(x + S - R, y);   HX.arcTo(x + S, y,     x + S, y + R,     R);
-          HX.lineTo(x + S, y + S - R); HX.arcTo(x + S, y + S, x + S - R, y + S, R);
-          HX.lineTo(x + R, y + S);   HX.arcTo(x,     y + S, x,     y + S - R, R);
-          HX.lineTo(x, y + R);       HX.arcTo(x,     y,     x + R, y,         R);
+          HX.moveTo(x+R,y);   HX.lineTo(x+S-R,y);   HX.arcTo(x+S,y,    x+S,y+R,    R);
+          HX.lineTo(x+S,y+S-R);                       HX.arcTo(x+S,y+S,  x+S-R,y+S, R);
+          HX.lineTo(x+R,y+S);                         HX.arcTo(x,  y+S,  x,   y+S-R, R);
+          HX.lineTo(x,  y+R);                         HX.arcTo(x,  y,    x+R, y,     R);
           HX.closePath();
-          HX.fillStyle   = accent ? `rgba(200,255,0,${fill})`   : `rgba(255,255,255,${fill})`;
-          HX.strokeStyle = accent ? `rgba(200,255,0,${stroke})` : `rgba(255,255,255,${stroke})`;
+          HX.fillStyle   = p.accent ? `rgba(200,255,0,${p.fill})`   : `rgba(255,255,255,${p.fill})`;
+          HX.strokeStyle = p.accent ? `rgba(200,255,0,${p.stroke})` : `rgba(255,255,255,${p.stroke})`;
           HX.lineWidth = 1;
-          HX.fill();
-          HX.stroke();
+          HX.fill(); HX.stroke();
         });
-
-        if (label) {
-          const [lr, lc] = shape[Math.floor(shape.length / 2)];
-          HX.fillStyle = accent
-            ? `rgba(200,255,0,${Math.min(fill * 6, 0.55)})`
-            : `rgba(255,255,255,${Math.min(fill * 5, 0.4)})`;
+        if (p.label) {
+          const [lr, lc] = p.shape[Math.floor(p.shape.length / 2)];
+          HX.fillStyle = p.accent
+            ? `rgba(200,255,0,${Math.min(p.fill*5, 0.5)})`
+            : `rgba(255,255,255,${Math.min(p.fill*5, 0.38)})`;
           HX.font = 'bold 8px Inter, monospace';
           HX.textAlign = 'center';
-          HX.fillText(label, px + lc * CELL + CELL / 2, py + lr * CELL + CELL / 2 + 3);
+          HX.fillText(p.label, p.x+lc*CELL+CELL/2, p.y+lr*CELL+CELL/2+3);
         }
-      }
-
-      function spawnFalling() {
-        const cols = Math.floor(HW / CELL);
-        const col  = Math.floor(cols * 0.38 + Math.random() * cols * 0.55);
-        const accent = Math.random() > 0.5;
-        falling.push({
-          shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-          x: col * CELL, y: -CELL * 5,
-          vy: 0.28 + Math.random() * 0.32,
-          fill:   accent ? 0.09 : 0.05,
-          stroke: accent ? 0.28 : 0.12,
-          label:  Math.random() > 0.55 ? TAGS[Math.floor(Math.random() * TAGS.length)] : null,
-          accent,
-        });
       }
 
       function heroLoop() {
         HX.clearRect(0, 0, HW, HH);
-        staticPieces.forEach(p => drawPiece(p.x, p.y, p.shape, p.fill, p.stroke, p.label, p.accent));
-
-        spawnTick++;
-        if (spawnTick > 160 && falling.length < 4) { spawnFalling(); spawnTick = 0; }
-
-        falling = falling.filter(p => p.y < HH + CELL * 5);
-        falling.forEach(p => { p.y += p.vy; drawPiece(p.x, p.y, p.shape, p.fill, p.stroke, p.label, p.accent); });
-
+        pieces.forEach(p => {
+          p.y += p.vy;
+          if (bb(p).y > HH + 20) resetPiece(p);
+          drawPiece(p);
+        });
         requestAnimationFrame(heroLoop);
+      }
+
+      function resizeHero() {
+        HW = HC.width  = HC.offsetWidth;
+        HH = HC.height = HC.offsetHeight;
+        initPieces();
       }
 
       window.addEventListener('resize', resizeHero);
@@ -1123,6 +1167,15 @@
     window.addEventListener('scroll', () => {
       navbar.classList.toggle('scrolled', window.scrollY > 40);
     });
+
+    /* ── Services card entrance ── */
+    const cardObs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        document.querySelectorAll('.scard').forEach(c => c.classList.add('in-view'));
+        cardObs.disconnect();
+      }
+    }, { threshold: 0.15 });
+    cardObs.observe(document.getElementById('services'));
 
     /* ── Services carousel ── */
     const scroll = document.getElementById('servicesScroll');
