@@ -976,7 +976,7 @@
       </div>
     </div>
 
-    <form class="contact-form" name="contact" netlify method="POST"  onsubmit="handleSubmit(event)">
+    <form class="contact-form" name="contact" netlify method="POST"  onsubmit="handleSubmit(event)" data-netlify-recaptcha="true" data-netlify="true">
       <input type="hidden" name="form-name" value="contact" />
       <div class="form-row">
         <div class="field-group">
@@ -1009,6 +1009,7 @@
       </div>
       <div class="form-submit">
         <p>We typically respond within one business day.</p>
+          <div data-netlify-recaptcha="true"></div>
         <button type="submit" class="btn-submit">Send message &rarr;</button>
       </div>
     </form>
