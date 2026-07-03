@@ -598,6 +598,151 @@
     }
     .btn-submit:hover { opacity: 0.85; }
 
+    /* ── PROJECTS ── */
+    #projects {
+      padding: 7rem var(--pad);
+    }
+    .projects-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 3.5rem;
+    }
+    .projects-header p.section-label { margin-bottom: 0.75rem; }
+    .projects-header-right {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 30ch;
+      line-height: 1.7;
+      text-align: right;
+    }
+    .projects-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .pcard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 360px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.3s;
+      position: relative;
+    }
+    .pcard:hover { border-color: #444; }
+    .pcard:hover .pcard-arrow { transform: translate(3px, -3px); }
+    .pcard-preview {
+      background: var(--pcard-color, #111);
+      position: relative;
+      overflow: hidden;
+      min-height: 280px;
+    }
+    .pcard-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .pcard-body {
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+    }
+    .pcard-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .pcard-client {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .pcard-year {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+    .pcard-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.3rem, 2vw, 1.75rem);
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.25rem;
+      flex: 1;
+    }
+    .pcard-desc {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+      margin-bottom: 1.75rem;
+    }
+    .pcard-services {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 2rem;
+    }
+    .pcard-service {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.65rem;
+      border-radius: 2px;
+    }
+    .pcard-cta {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-top: auto;
+    }
+    .pcard-arrow {
+      transition: transform 0.2s;
+      display: inline-flex;
+    }
+    /* locked / coming-soon card */
+    .pcard--locked {
+      cursor: default;
+      opacity: 0.45;
+    }
+    .pcard--locked:hover { border-color: var(--border); }
+    .pcard--locked .pcard-body { background: #0d0d0d; }
+    .pcard-soon {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.75rem;
+      border-radius: 2px;
+      display: inline-block;
+      margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .pcard { grid-template-columns: 1fr; }
+      .pcard-preview { min-height: 220px; }
+      .projects-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .projects-header-right { text-align: left; }
+    }
+
     /* ── FOOTER ── */
     footer {
       padding: 2.5rem var(--pad);
@@ -674,6 +819,7 @@
     <a href="#services" class="mobile-nav-link">Services</a>
     <a href="#signal" class="mobile-nav-link">Our approach</a>
     <a href="#about" class="mobile-nav-link">About</a>
+    <a href="#projects" class="mobile-nav-link">Work</a>
     <a href="#contact" class="nav-cta mobile-nav-link">Get in touch</a>
   </div>
 
@@ -692,6 +838,7 @@
       <li><a href="#services">Services</a></li>
       <li><a href="#signal">Our approach</a></li>
       <li><a href="#about">About</a></li>
+      <li><a href="#projects">Work</a></li>
       <li><a href="#contact" class="nav-cta">Get in touch</a></li>
     </ul>
     <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
@@ -1040,6 +1187,78 @@
         Work with us
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
       </a>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- PROJECTS -->
+  <section id="projects">
+    <div class="projects-header">
+      <div>
+        <p class="section-label">Selected Work</p>
+        <h2 class="section-heading">What we've<br/>shipped.</h2>
+      </div>
+      <p class="projects-header-right">
+        A selection of client work spanning<br/>
+        web, data, and design.
+      </p>
+    </div>
+
+    <div class="projects-list">
+
+      <!-- Repair Campaign -->
+      <a href="repaircampaign.html" class="pcard">
+        <div class="pcard-preview" style="--pcard-color: #1a0505;">
+          <img src="/images/Repairhero.png" alt="The Repair Campaign" style="width:100%; height:100%; object-fit:cover; display:block;" />
+        </div>
+        <div class="pcard-body">
+          <div class="pcard-meta">
+            <span class="pcard-client">The Repair Campaign</span>
+            <span class="pcard-year">2023</span>
+          </div>
+          <h3 class="pcard-title">A digital platform for a global reparations movement</h3>
+          <p class="pcard-desc">
+            Building the primary web presence for a Caribbean-led advocacy organisation
+            calling for reparatory justice — community-first architecture, editorial independence, and a timeline that makes history navigable.
+          </p>
+          <div class="pcard-services">
+            <span class="pcard-service">Web Development</span>
+            <span class="pcard-service">UI / UX Design</span>
+            <span class="pcard-service">Analytics &amp; SEO</span>
+            <span class="pcard-service">Email Design</span>
+            <span class="pcard-service">Custom Plugin</span>
+          </div>
+          <div class="pcard-cta">
+            Read case study
+            <span class="pcard-arrow">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h10M7 2l5 5-5 5"/></svg>
+            </span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Placeholder 2 -->
+      <div class="pcard pcard--locked">
+        <div class="pcard-preview" style="--pcard-color: #0c0c12;">
+          <svg viewBox="0 0 600 360" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <rect width="600" height="360" fill="#0c0c12"/>
+            <rect x="0" y="0" width="600" height="36" fill="rgba(0,0,0,0.3)"/>
+            <rect x="48" y="80" width="200" height="20" rx="3" fill="rgba(255,255,255,0.06)"/>
+            <rect x="48" y="110" width="300" height="20" rx="3" fill="rgba(255,255,255,0.04)"/>
+            <rect x="48" y="140" width="250" height="20" rx="3" fill="rgba(255,255,255,0.03)"/>
+            <rect x="48" y="200" width="520" height="120" rx="4" fill="rgba(255,255,255,0.03)"/>
+          </svg>
+        </div>
+        <div class="pcard-body">
+          <span class="pcard-soon">Coming soon</span>
+          <h3 class="pcard-title">Next case study in the works</h3>
+          <p class="pcard-desc">
+            More work to be documented here soon.
+          </p>
+        </div>
+      </div>
+
     </div>
   </section>
 
